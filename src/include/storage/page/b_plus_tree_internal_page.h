@@ -11,8 +11,10 @@
 #pragma once
 
 #include <queue>
-
+#include <utility>
+#include "common/config.h"
 #include "storage/page/b_plus_tree_page.h"
+#include "storage/page/hash_table_page_defs.h"
 
 namespace bustub {
 
@@ -41,6 +43,25 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   auto KeyAt(int index) const -> KeyType;
   void SetKeyAt(int index, const KeyType &key);
   auto ValueAt(int index) const -> ValueType;
+  auto BinarySearch(KeyType key, KeyComparator &comparactor) const -> std::pair<int, ValueType>;
+  void SetValueAt(int index, const ValueType &value);
+
+  auto Insert(const KeyType &key, const ValueType &value, KeyComparator &comparator) -> bool;
+  auto FindKeyPosition(const KeyType &key, KeyComparator &comparator) -> int;
+  auto RemoveKey(const KeyType &key, KeyComparator &comparator) -> bool;
+
+  void CopyBackward(int index);
+  void Copy(int index);
+
+  void MergeTo(BPlusTreeInternalPage *recipient);
+  void MoveLatterHalfWithOneExtraTo(BPlusTreeInternalPage *recipient, KeyType extra_key, ValueType extra_value,
+                                    KeyComparator &comparator);
+  void MoveFirstToEndOf(BPlusTreeInternalPage *recipient);
+  void MoveLastToFrontOf(BPlusTreeInternalPage *recipient);
+  // void MoveElementToSpecifiedPosition(BPlusTreeInternalPage *recipient,int current_position,int distination);
+
+  auto GetMappingSize() -> size_t;
+  auto GetArray() -> MappingType *;
 
  private:
   // Flexible array member for page data.

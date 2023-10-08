@@ -140,8 +140,21 @@ class BufferPoolManagerInstance : public BufferPoolManager {
    */
   auto DeletePgImp(page_id_t page_id) -> bool override;
 
+  /**
+   * TODO(P1): Add implementation
+   * @brief 判断缓冲池中是否有空闲页面或者可驱逐页面，如果有则返回true，反正为false。
+   * 若为true，则还会完成创建一个页面的准备工作。
+   * 如果有空闲页面则空闲页面出队并返回出队页面的id；
+   * 如果有可驱逐页则将该页的id传回（调用evict函数
+   * 不可驱逐会返回false，可驱逐会返回所驱逐页面id），同时检查dirty标志，将脏页用writePage写回
+   * @param page_id
+   * @return false if the page exists but could not be deleted, true if the page didn't exist or deletion succeeded
+   */
+  auto AvailableFrameJudgement(frame_id_t *frame_id) -> bool;
+
   /** Number of pages in the buffer pool. */
-  const size_t pool_size_;
+  const size_t pool_size_;  // 为什么对于类的const成员，只能使用初始化列表，而不能在构造函数内部进行赋值操作?
+                            // 由于常量只能初始化不能赋值，所以常量成员必须使用初始化列表；
   /** The next page id to be allocated  */
   std::atomic<page_id_t> next_page_id_ = 0;
   /** Bucket size for the extendible hash table */

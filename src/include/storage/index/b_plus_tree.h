@@ -12,12 +12,15 @@
 
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "common/config.h"
 #include "concurrency/transaction.h"
 #include "storage/index/index_iterator.h"
 #include "storage/page/b_plus_tree_internal_page.h"
 #include "storage/page/b_plus_tree_leaf_page.h"
+#include "storage/page/b_plus_tree_page.h"
 
 namespace bustub {
 
@@ -39,6 +42,7 @@ class BPlusTree {
   using LeafPage = BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>;
 
  public:
+  enum class LatchModes { READ = 0, INSERT, DELETE, OPTIMIZE };
   explicit BPlusTree(std::string name, BufferPoolManager *buffer_pool_manager, const KeyComparator &comparator,
                      int leaf_max_size = LEAF_PAGE_SIZE, int internal_max_size = INTERNAL_PAGE_SIZE);
 
@@ -47,10 +51,25 @@ class BPlusTree {
 
   // Insert a key-value pair into this B+ tree.
   auto Insert(const KeyType &key, const ValueType &value, Transaction *transaction = nullptr) -> bool;
+  auto InsertHelper(const KeyType &key, const ValueType &value, Transaction *transaction, LatchModes mode) -> bool;
+  void InsertInLeaf(LeafPage *recipient, KeyType key, ValueType value);
+  void InsertInParent(BPlusTreePage *recipient, const KeyType &key, BPlusTreePage *recipient_new, int &dirty_height);
+  auto CreateInternalPage() -> InternalPage *;
+  auto CreateLeafPage() -> LeafPage *;
+  void InitBplusTree(KeyType key, ValueType value);
 
   // Remove a key and its value from this B+ tree.
   void Remove(const KeyType &key, Transaction *transaction = nullptr);
-
+  void RemoveHelper(const KeyType &key, Transaction *transaction, LatchModes mode);
+  void DeleteEntry(BPlusTreePage *recipient, KeyType key, int &dirty_height);
+  auto TryRedistribute(BPlusTreePage *recipient, KeyType key) -> bool;
+  void Redistribute(BPlusTreePage *recipient, BPlusTreePage *recipient_brother, InternalPage *parent,
+                    int recipient_position, bool brother_on_left);
+  auto TryMerge(BPlusTreePage *recipient, KeyType key, int &dirty_height) -> bool;
+  void Merge(BPlusTreePage *recipient, BPlusTreePage *recipient_brother, Page *brother_page, InternalPage *parent,
+             int recipient_position, bool brother_on_left, int &dirty_height);
+  void UpdateAllParentID(InternalPage *recipient);
+  void UpdateParentID(InternalPage *recipient, int index);
   // return the value associated with a given key
   auto GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction = nullptr) -> bool;
 
@@ -77,6 +96,21 @@ class BPlusTree {
  private:
   void UpdateRootPageId(int insert_record = 0);
 
+  auto FetchBPlusTreePage(page_id_t page_id) -> std::pair<Page *, BPlusTreePage *>;
+
+  auto ReinterpretAsLeafPage(BPlusTreePage *page) -> BPlusTreeLeafPage<KeyType, RID, KeyComparator> *;
+
+  auto ReinterpretAsInternalPage(BPlusTreePage *page) -> BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> *;
+
+  auto FindLeafPage(const KeyType &key, Transaction *transaction = nullptr, LatchModes mode = LatchModes::READ)
+      -> std::pair<Page *, BPlusTreeLeafPage<KeyType, RID, KeyComparator> *>;
+
+  void LatchRootPageId(Transaction *transaction, BPlusTree::LatchModes mode);
+
+  void ReleaseAllLatches(Transaction *transaction, LatchModes mode, int dirty_height = 0);
+
+  auto IsSafePage(BPlusTreePage *page, LatchModes mode) -> bool;
+  void SetPageDirty(page_id_t page_id);
   /* Debug Routines for FREE!! */
   void ToGraph(BPlusTreePage *page, BufferPoolManager *bpm, std::ofstream &out) const;
 
@@ -89,6 +123,10 @@ class BPlusTree {
   KeyComparator comparator_;
   int leaf_max_size_;
   int internal_max_size_;
+  // 用来记录树的根节点被创建
+  bool header_record_created_{false};
+  // latch for the root_id
+  ReaderWriterLatch root_id_rwlatch_;
 };
 
 }  // namespace bustub

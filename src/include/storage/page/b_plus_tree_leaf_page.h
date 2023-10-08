@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "storage/page/b_plus_tree_page.h"
+#include "storage/page/hash_table_page_defs.h"
 
 namespace bustub {
 
@@ -27,9 +28,9 @@ namespace bustub {
  * page. Only support unique key.
  *
  * Leaf page format (keys are stored in order):
- *  ----------------------------------------------------------------------
+ *  ---------------------------------------------------------------------
  * | HEADER | KEY(1) + RID(1) | KEY(2) + RID(2) | ... | KEY(n) + RID(n)
- *  ----------------------------------------------------------------------
+ *  ---------------------------------------------------------------------
  *
  *  Header format (size in byte, 28 bytes in total):
  *  ---------------------------------------------------------------------
@@ -49,6 +50,24 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   auto GetNextPageId() const -> page_id_t;
   void SetNextPageId(page_id_t next_page_id);
   auto KeyAt(int index) const -> KeyType;
+  auto SearchPosition(const KeyType &key, KeyComparator &comparator) const -> int;
+  auto BinarySearch(const KeyType &key, std::vector<ValueType> *search_result, KeyComparator &comparator) const -> bool;
+  void SetKeyAt(int index, const KeyType &key);
+  auto ValueAt(int index) const -> ValueType;
+  void SetValueAt(int index, const ValueType &value);
+  auto PairAt(int index) const -> const MappingType &;
+
+  auto Insert(const KeyType &key, const ValueType &value, KeyComparator &compactor) -> bool;
+  void CopyBackward(int index);
+  void Copy(int index);
+
+  auto RemoveKey(const KeyType &key, KeyComparator &comparator) -> bool;
+  void MergeTo(BPlusTreeLeafPage *recipient);
+  void MoveLatterHalfTo(BPlusTreeLeafPage *recipient);
+  void MoveFirstToEndOf(BPlusTreeLeafPage *recipient);
+  void MoveLastToFrontOf(BPlusTreeLeafPage *recipient);
+  auto GetMappingSize() const -> size_t;
+  auto GetArrayPtr() -> char *;
 
  private:
   page_id_t next_page_id_;
