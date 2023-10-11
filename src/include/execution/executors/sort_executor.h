@@ -20,6 +20,7 @@
 #include "execution/plans/seq_scan_plan.h"
 #include "execution/plans/sort_plan.h"
 #include "storage/table/tuple.h"
+#include "type/type.h"
 
 namespace bustub {
 
@@ -52,5 +53,10 @@ class SortExecutor : public AbstractExecutor {
  private:
   /** The sort plan node to be executed */
   const SortPlanNode *plan_;
+
+  std::unique_ptr<AbstractExecutor> child_executor_;
+
+  std::vector<Tuple> sorted_tuple_;
+  std::vector<Tuple>::iterator iterator_{};
 };
 }  // namespace bustub

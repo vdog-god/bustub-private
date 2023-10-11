@@ -335,7 +335,8 @@ class Catalog {
 
   auto GetTableNames() -> std::vector<std::string> {
     std::vector<std::string> result;
-    for (const auto &x : table_names_) {
+    result.reserve(table_names_.size());
+for (const auto &x : table_names_) {
       result.push_back(x.first);
     }
     return result;

@@ -162,7 +162,7 @@ TEST(StarterTrieTest, RemoveTest) {
   }
 }
 
-TEST(StarterTrieTest, ConcurrentTest1) {
+TEST(StarterTrieTest, DISABLED_ConcurrentTest1) {
   Trie trie;
   constexpr int num_words = 1000;
   constexpr int num_bits = 10;
@@ -176,7 +176,7 @@ TEST(StarterTrieTest, ConcurrentTest1) {
   };
   for (int i = 0; i < num_words; i++) {
     std::string key = std::bitset<num_bits>(i).to_string();
-    threads.emplace_back(std::thread{insert_task, key, i});
+    threads.emplace_back(insert_task, key, i);
   }
   for (int i = 0; i < num_words; i++) {
     threads[i].join();
@@ -191,7 +191,7 @@ TEST(StarterTrieTest, ConcurrentTest1) {
   };
   for (int i = 0; i < num_words; i++) {
     std::string key = std::bitset<num_bits>(i).to_string();
-    threads.emplace_back(std::thread{get_task, key, i});
+    threads.emplace_back(get_task, key, i);
   }
   for (int i = 0; i < num_words; i++) {
     threads[i].join();

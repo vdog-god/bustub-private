@@ -24,6 +24,7 @@
 #include "execution/expressions/abstract_expression.h"
 #include "execution/plans/aggregation_plan.h"
 #include "storage/table/tuple.h"
+#include "type/value.h"
 #include "type/value_factory.h"
 
 namespace bustub {
@@ -72,12 +73,46 @@ class SimpleAggregationHashTable {
    */
   void CombineAggregateValues(AggregateValue *result, const AggregateValue &input) {
     for (uint32_t i = 0; i < agg_exprs_.size(); i++) {
-      switch (agg_types_[i]) {
-        case AggregationType::CountStarAggregate:
+      switch (agg_types_[i]) {                     // agg_types_应该是一组要进行聚合操作的集合
+        case AggregationType::CountStarAggregate:  // aggregates应该是表中的一行数据
+          result->aggregates_[i] = result->aggregates_[i].Add(Value(input.aggregates_[i].GetTypeId(), 1));
+          break;
         case AggregationType::CountAggregate:
+          if (!input.aggregates_[i].IsNull()) {  // input 和result的getTypeId应该相同
+            if (result->aggregates_[i].IsNull()) {
+              // 若是第一个不为null的值，需要初始化为1
+              result->aggregates_[i] = Value(result->aggregates_[i].GetTypeId(), 1);
+            } else {
+              result->aggregates_[i] = result->aggregates_[i].Add(Value(input.aggregates_[i].GetTypeId(), 1));
+            }
+          }
+          break;
         case AggregationType::SumAggregate:
+          if (!input.aggregates_[i].IsNull()) {     // value的值为空时不计入
+            if (result->aggregates_[i].IsNull()) {  // 之前没统计过则用第一个不为null的值初始化
+              result->aggregates_[i] = Value(input.aggregates_[i]);
+            } else {
+              result->aggregates_[i] = result->aggregates_[i].Add(Value(input.aggregates_[i]));
+            }
+          }
+          break;
         case AggregationType::MinAggregate:
+          if (!input.aggregates_[i].IsNull()) {     // value的值为空时不计入
+            if (result->aggregates_[i].IsNull()) {  // 之前没统计过则用第一个不为null的值初始化
+              result->aggregates_[i] = Value(input.aggregates_[i]);
+            } else {
+              result->aggregates_[i] = result->aggregates_[i].Min(Value(input.aggregates_[i]));
+            }
+          }
+          break;
         case AggregationType::MaxAggregate:
+          if (!input.aggregates_[i].IsNull()) {     // value的值为空时不计入
+            if (result->aggregates_[i].IsNull()) {  // 之前没统计过则用第一个不为null的值初始化
+              result->aggregates_[i] = Value(input.aggregates_[i]);
+            } else {
+              result->aggregates_[i] = result->aggregates_[i].Max(Value(input.aggregates_[i]));
+            }
+          }
           break;
       }
     }
@@ -200,9 +235,9 @@ class AggregationExecutor : public AbstractExecutor {
   const AggregationPlanNode *plan_;
   /** The child executor that produces tuples over which the aggregation is computed */
   std::unique_ptr<AbstractExecutor> child_;
-  /** Simple aggregation hash table */
-  // TODO(Student): Uncomment SimpleAggregationHashTable aht_;
-  /** Simple aggregation hash table iterator */
-  // TODO(Student): Uncomment SimpleAggregationHashTable::Iterator aht_iterator_;
+  SimpleAggregationHashTable aht_;
+  SimpleAggregationHashTable::Iterator aht_iterator_;
+  SimpleAggregationHashTable::Iterator end_;
+  bool empty_output_{true};
 };
 }  // namespace bustub

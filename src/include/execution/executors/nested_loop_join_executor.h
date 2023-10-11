@@ -14,11 +14,13 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/nested_loop_join_plan.h"
 #include "storage/table/tuple.h"
+#include "type/value_factory.h"
 
 namespace bustub {
 
@@ -52,9 +54,37 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
   /** @return The output schema for the insert */
   auto GetOutputSchema() const -> const Schema & override { return plan_->OutputSchema(); };
 
+  // value值合并函数，将两个表的tuple组合成新的tuple
+  void MergeValueFromTuple(std::vector<Value> &value, bool right_isnull) const {
+    auto left_column_count = left_executor_->GetOutputSchema().GetColumnCount();
+    auto right_column_count = right_executor_->GetOutputSchema().GetColumnCount();
+    for (unsigned int i = 0; i < left_column_count; i++) {
+      value.push_back(left_tuple_.GetValue(&left_executor_->GetOutputSchema(), i));
+    }
+    for (unsigned int i = 0; i < right_column_count; i++) {
+      if (!right_isnull) {
+        value.push_back(right_tuple_.GetValue(&right_executor_->GetOutputSchema(), i));
+      } else {
+        value.push_back(ValueFactory::GetNullValueByType(right_executor_->GetOutputSchema().GetColumn(i).GetType()));
+      }
+    }
+  }
+
  private:
   /** The NestedLoopJoin plan node to be executed. */
   const NestedLoopJoinPlanNode *plan_;
+
+  std::unique_ptr<AbstractExecutor> left_executor_;
+  std::unique_ptr<AbstractExecutor> right_executor_;
+
+  Tuple left_tuple_{};
+  Tuple right_tuple_{};
+  bool next_ltuple_existent_{false};
+  bool next_rtuple_existent_{false};
+  RID left_rid_{};
+  RID right_rid_{};
+  // 左连接右表有无匹配项
+  bool right_found_{false};
 };
 
 }  // namespace bustub
