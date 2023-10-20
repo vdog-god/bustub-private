@@ -48,7 +48,8 @@ enum class TransactionState { GROWING, SHRINKING, COMMITTED, ABORTED };
  * Transaction isolation level.
  */
 enum class IsolationLevel { READ_UNCOMMITTED, REPEATABLE_READ, READ_COMMITTED };
-
+// 使用2PL来实现ReadCommitted（RC）隔离级别。在这种隔离级别下，事务中的读取操作
+// 不会对其他事务的写入操作造成干扰，从而避免了不可重复读和幻读现象的发生。
 /**
  * Type of write operation.
  */
@@ -340,7 +341,7 @@ class Transaction {
   /** The LSN of the last record written by the transaction. */
   lsn_t prev_lsn_;
 
-  std::mutex latch_;
+  std::mutex latch_;  // 锁谁的？
 
   /** Concurrent index: the pages that were latched during index operation. */
   std::shared_ptr<std::deque<Page *>> page_set_;
