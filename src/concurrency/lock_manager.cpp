@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "common/config.h"
+#include "common/logger.h"
 #include "common/macros.h"
 #include "common/rid.h"
 #include "concurrency/transaction.h"
@@ -70,7 +71,7 @@ auto LockManager::LockTable(Transaction *txn, LockMode lock_mode, const table_oi
 
   std::unique_lock<std::mutex> queuelock(queue->latch_);
 
-  while (!GrantCompatibleLock(lock_mode, txn, queue, true)) {
+  while (!GrantCompatibleLock(lock_mode, txn, queue, true,!queue_is_exist)) {
     queue->cv_.wait(queuelock);
   }
   return true;
@@ -181,7 +182,7 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
 
   std::unique_lock<std::mutex> queuelock(queue->latch_);
 
-  while (!GrantCompatibleLock(lock_mode, txn, queue, false)) {
+  while (!GrantCompatibleLock(lock_mode, txn, queue, false, queue_is_exist)) {
     queue->cv_.wait(queuelock);
   }
   return true;
@@ -298,7 +299,7 @@ auto LockManager::LockUpgradeandInsert(LockMode mode, Transaction *txn, bool tab
   // 升级请求 只能是相对已上锁的资源来说的，若资源未上锁那么就谈不上需要升级
   // 因此需要在已上锁的资源上进行升级，可以从事务维护的锁集合中找到.（发现不现实，因为你不知道事务之前上的锁在哪个队列）
   std::unique_lock<std::mutex> lock(queue->latch_);
-  auto iterator = queue->request_queue_.begin();
+  auto iterator = 0;
   for (auto tmp : queue->request_queue_) {
     if (tmp->txn_id_ == txn->GetTransactionId()) {
       if (tmp->granted_) {
@@ -373,8 +374,18 @@ auto LockManager::LockUpgradeandInsert(LockMode mode, Transaction *txn, bool tab
           assert(oid == tmp->oid_);
           delete tmp;
           auto upgrade_quest = std::make_shared<LockRequest>(txn->GetTransactionId(), mode, oid);
-          queue->request_queue_.insert(iterator, upgrade_quest.get());
-          queue->cv_.notify_all();                             // 存疑？要通知吗
+          // 插入队列
+          if (iterator == 0) {
+            queue->request_queue_.insert(queue->request_queue_.begin(), upgrade_quest.get());
+          } else {
+            auto it = queue->request_queue_.begin();
+            while (static_cast<bool>(iterator--)) {
+              it++;
+            }
+            queue->request_queue_.insert(it, upgrade_quest.get());
+          }
+
+          // queue->cv_.notify_all();                             // 存疑？要通知吗
           std::unique_lock<std::mutex> unlock(queue->latch_);  // 可以自动释放
         } else {
           // 是行锁
@@ -383,7 +394,17 @@ auto LockManager::LockUpgradeandInsert(LockMode mode, Transaction *txn, bool tab
           queue->request_queue_.remove(tmp);
           delete tmp;
           auto upgrade_quest = std::make_shared<LockRequest>(txn->GetTransactionId(), mode, oid, rid);
-          queue->request_queue_.insert(iterator, upgrade_quest.get());
+          // 插入队列
+          if (iterator == 0) {
+            queue->request_queue_.insert(queue->request_queue_.begin(), upgrade_quest.get());
+          } else {
+            auto it = queue->request_queue_.begin();
+            while (static_cast<bool>(iterator--)) {
+              it++;
+            }
+            queue->request_queue_.insert(it, upgrade_quest.get());
+          }
+
           queue->cv_.notify_all();                             // 存疑？要通知吗
           std::unique_lock<std::mutex> unlock(queue->latch_);  // 可以自动释放
         }
@@ -435,9 +456,9 @@ void LockManager::CompatibleLock(const std::unordered_set<LockMode> &granted_loc
 }
 
 auto LockManager::GrantCompatibleLock(LockMode mode, Transaction *txn, std::shared_ptr<LockRequestQueue> &queue,
-                                      bool table_lock) -> bool {
+                                      bool table_lock,bool empty_queue) -> bool {
   // 当前是新创建的锁请求队列，特殊处理
-  if (queue->request_queue_.size() == 1) {
+  if (empty_queue) {
     // 将 锁加入集合
     auto iterator = queue->request_queue_.begin();
     if (table_lock) {
