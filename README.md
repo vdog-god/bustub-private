@@ -1,3 +1,11 @@
+
+<img width="1440" alt="截屏2023-10-22 16 18 45" src="https://github.com/vdog-god/bustub-private/assets/75245446/f1cfcf87-0269-40cb-97d8-2b6f9ab1d35d">
+<img width="1440" alt="截屏2023-10-22 16 18 59" src="https://github.com/vdog-god/bustub-private/assets/75245446/069a5d92-7b8a-404d-afcf-a9ba0cefc674">
+<img width="1440" alt="截屏2023-10-22 16 57 44" src="https://github.com/vdog-god/bustub-private/assets/75245446/7bf7a7b4-e8f2-4ca9-a4fc-cbf6ed6bc547">
+<img width="1440" alt="截屏2023-10-22 16 19 56" src="https://github.com/vdog-god/bustub-private/assets/75245446/a20b6a09-f161-4663-94e0-d11ea07ec410">
+<img width="1440" alt="截屏2023-10-22 16 19 43" src="https://github.com/vdog-god/bustub-private/assets/75245446/d518dbcb-7b60-4d41-96a6-24a36e1b72b4">
+
+
 <img src="logo/bustub-whiteborder.svg" alt="BusTub Logo" height="200">
 
 -----------------
@@ -163,5 +171,10 @@ to open a shell within the box. You can find Bustub's code mounted at `/bustub` 
 
 ```
 $ cd build
-$ make check-tests
+$ make check-tests<img width="1440" alt="截屏2023-10-22 16 57 44" src="https://github.com/vdog-god/bustub-private/assets/75245446/b806d800-c236-4dc7-aa9c-1a76cd5f4682">
+<img width="1440" alt="截屏2023-10-22 16 19 56" src="https://github.com/vdog-god/bustub-private/assets/75245446/93eea057-0331-45e1-abcb-a061cf13b18a">
+<img width="1440" alt="截屏2023-10-22 16 19 43" src="https://github.com/vdog-god/bustub-private/assets/75245446/beeda585-43df-423e-aea6-bed50be79600">
+<img width="1440" alt="截屏2023-10-22 16 18 59" src="https://github.com/vdog-god/bustub-private/assets/75245446/e5310808-0951-4a19-8e7e-8e146cf858f6">
+<img width="1440" alt="截屏2023-10-22 16 18 45" src="https://github.com/vdog-god/bustub-private/assets/75245446/7bac94f6-74fa-45bf-b5ff-c161e7c8368e">
+
 ```
